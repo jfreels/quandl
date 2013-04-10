@@ -13,7 +13,7 @@ grains<-list("C","S")
 # Metals: Gold, Copper
 metals<-list("GC","HG")
 # Softs: Sugar, Coffee
-softs<-list("SB","KC")
+softs<-list("KC") # SB (sugar) is messed up from first glance
 # Meats: Live Cattle
 meats<-list("LC")
 # Bonds: 30 Year Treasury Bond, 3-Month Eurodollar
@@ -37,8 +37,12 @@ futures<-ldply(futures,melt,id="Date")
 futures$variable<-futures$.id
 futures<-futures[,-1]
 colnames(futures)[1]<-"date"
+futures<-arrange(futures,date)
 head(futures)
 
-ggplot(futures,aes(x=date,y=value,group=variable,color=variable))+geom_line()+
+data<-subset(futures,date>="2011-01-01")
+data.ma<-ddply(data,.(variable),transform,MA100=rollmean(value,k=100,fill=NA,align="right"))
+ggplot(data.ma,aes(x=date,y=value,group=variable,color=variable))+
+  geom_line()+geom_line(aes(y=MA100,group=variable),color="black")+
   facet_wrap(~variable,scale="free")
 
