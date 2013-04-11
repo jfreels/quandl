@@ -7,23 +7,23 @@ library(devtools)
 #install_github("r_jfreels","jfreels")
 library(jfreels)
 # list the markets you want data on
-                 # Currencies: Australian Dollar, Canadian Dollar, British Pound Sterling, Japanese Yen, Euro
-futures.list<-list(currency=c("AD","CD","BP","JY","EC"),
-                 # Energy: WTI Crude Oil, Natural Gas
-                 energy=c("CL","NG"),
-                 # Metals: Gold, Copper
-                 metals=c("GC","HG"),
-                 # Grains: Corn, Soybeans
-                 grains=c("C","S"),
-                 # Softs: Coffee
-                 softs=c("KC"),
-                 # Meats: Live Cattle
-                 meats=c("LC"),
-                 # Bonds: 30 Year Treasury Bond, 3-Month Eurodollar
-                 bonds=c("US","ED"),
+                 # Currencies: Australian Dollar, Canadian Dollar, British Pound Sterling, Japanese Yen, Euro, Brazilian Real
+futures.list<-list(currency=c("AD","CD","BP","JY","EC","BR"),
+                 # Energy: WTI Crude Oil, Brent Crude Oil, Natural Gas
+                 energy=c("CL","B","NG"),
+                 # Metals: Gold, Silver, Copper
+                 metals=c("GC","SI","HG"),
+                 # Grains: Corn, Wheat, Soybeans
+                 grains=c("C","W","S"),
+                 # Softs: Coffee, Cocoa, Cotton
+                 softs=c("KC","CC","CT"),
+                 # Meats: Live Cattle, Lean Hogs, Feeder Cattle
+                 meats=c("LC","LN","FC"),
+                 # Bonds: 10-year Treasury Note, 30-year Treasury Bond, 3-Month Eurodollar
+                 bonds=c("TY","US","ED"),
                  # Equities: S&P 500, Nikkei 225
                  equities=c("SP","NK"))
-futures.df<-ldply(marketDF,melt)
+futures.df<-ldply(futures.list,melt)
 names(futures.df)<-c("sector","market")
 futures.df$market<-as.character(futures.df$market)
 # All markets combined
@@ -59,5 +59,3 @@ ggplot(data.ma,aes(x=date,y=value,group=market,color=sector))+
 # Horizon Plot of 100 day ma
 data.horizon<-ddply(data,.(market),transform,ror100=ror(value,100))
 horizon.panel.ggplot(data.horizon[,c(1,2,5)],"Futures Markets (2011-Present): Horizon Plot of 100 Day Rolling Returns")
-
-
