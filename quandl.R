@@ -3,6 +3,9 @@
 library(plyr)
 library(reshape2)
 library(ggplot2)
+library(devtools)
+#install_github("r_jfreels","jfreels")
+library(jfreels)
 # list the markets you want data on
                  # Currencies: Australian Dollar, Canadian Dollar, British Pound Sterling, Japanese Yen, Euro
 futures.list<-list(currency=c("AD","CD","BP","JY","EC"),
@@ -45,11 +48,16 @@ names(futures)<-c("date","market","value")
 futures<-join(futures,futures.df,by="market")
 head(futures)
 
-
+# GGPLOT2 markets with 100 day moving average
 data<-subset(futures,date>="2011-01-01")
 data.ma<-ddply(data,.(market),transform,MA100=rollmean(value,k=100,fill=NA,align="right"))
 ggplot(data.ma,aes(x=date,y=value,group=market,color=sector))+
   geom_line()+geom_line(aes(y=MA100,group=market),color="black")+
-  facet_wrap(~market,scale="free")
+  facet_wrap(~market,scale="free")+
+  labs(x=NULL,y=NULL,title="Futures Markets (2011-Present): Prices and 100 Day Moving Average")
+
+# Horizon Plot of 100 day ma
+data.horizon<-ddply(data,.(market),transform,ror100=ror(value,100))
+horizon.panel.ggplot(data.horizon[,c(1,2,5)],"Futures Markets (2011-Present): Horizon Plot of 100 Day Rolling Returns")
 
 
