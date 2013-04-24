@@ -1,11 +1,11 @@
 ##### download quandl data on futures contracts
 # libraries
-library(plyr)
-library(reshape2)
-library(ggplot2)
-library(devtools)
+
+# load packages
+libs<-c("reshape2","plyr","data.table","lubridate","gdata","ggplot2","RColorBrewer","scales","devtools","jfreels","quantmod","data.table")
+lapply(libs,require,character.only=TRUE)
 #install_github("r_jfreels","jfreels")
-library(jfreels)
+
 # list the markets you want data on
                  # Currencies: Australian Dollar, Canadian Dollar, British Pound Sterling, Japanese Yen, Euro, Brazilian Real
 futures.list<-list(currency=c("AD","CD","BP","JY","EC","BR"),
@@ -38,24 +38,34 @@ futures.orig<-lapply(markets,quandl)
 # rename the list of data frames to the correct futures market name
 names(futures.orig)<-futures.df$market
 # take only the date and the settle value
-futures<-llply(futures.orig,function(x) x[,c(1,5)])
+futures<-llply(futures.orig,function(x) x[,c("Date","Settle")])
 futures<-ldply(futures,melt,id="Date")
 futures$variable<-futures$.id
-futures<-futures[,-1]
-colnames(futures)[1]<-"date"
+futures$.id<-NULL
+colnames(futures)<-tolower(colnames(futures))
 futures<-arrange(futures,date)
 names(futures)<-c("date","market","value")
 futures<-join(futures,futures.df,by="market")
-head(futures)
+futures<-data.table(futures,key=c("market,date"))
 
 # GGPLOT2 markets with 100 day moving average
-data<-subset(futures,date>="2011-01-01")
-data.ma<-ddply(data,.(market),transform,MA100=rollmean(value,k=100,fill=NA,align="right"))
-ggplot(data.ma,aes(x=date,y=value,group=market,color=sector))+
+DT<-futures[date>=as.Date('2011-01-01')]
+DT.start.date<-max(DT[,min(date),by=market]$V1)
+DT.end.date<-min(DT[,max(date),by=market]$V1)
+DT[,MA100:=rollmean(value,k=100,fill=NA,align="right"),by=market]
+ggplot(DT,aes(x=date,y=value,group=market,color=sector))+
   geom_line()+geom_line(aes(y=MA100,group=market),color="black")+
-  facet_wrap(~market,scale="free")+
+  facet_wrap(sector~market,scale="free")+
   labs(x=NULL,y=NULL,title="Futures Markets (2011-Present): Prices and 100 Day Moving Average")
 
 # Horizon Plot of 100 day ma
-data.horizon<-ddply(data,.(market),transform,ror100=ror(value,100))
-horizon.panel.ggplot(data.horizon[,c(1,2,5)],"Futures Markets (2011-Present): Horizon Plot of 100 Day Rolling Returns")
+DT[,ror100:=ror(value,100),by=market]
+horizon.panel.ggplot(DT[,list(date,market,ror100)],"Futures Markets (2011-Present): Horizon Plot of 100 Day Rolling Returns")
+
+# Horizon Plot of returns
+DT.april2013<-futures[date>=as.Date('2013-04-01')]
+DT.april2013[,ror:=ror(value),by=market]
+horizon.panel.ggplot(DT.april2013[,list(date,market,ror)],title="Futures Markets (2011- Present): Horizon Plot of Daily Returns")
+
+# data.table analysis
+fdt<-data.table(futures,key=c("market","date"))
